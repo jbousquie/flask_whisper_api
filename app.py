@@ -1,12 +1,16 @@
 import os
 import tempfile
 import logging
+import warnings
 from flask import Flask, request, jsonify
 from werkzeug.utils import secure_filename
 import whisperx
 import gc
 import torch
 from dotenv import load_dotenv
+
+# Filter out specific SpeechBrain deprecation warning
+warnings.filterwarnings("ignore", message="Module 'speechbrain.pretrained' was deprecated")
 
 # Load environment variables
 load_dotenv()

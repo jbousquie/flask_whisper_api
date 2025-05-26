@@ -1,12 +1,13 @@
 # WhisperX Flask API
 
-A Flask-based REST API for WhisperX with speaker diarization support.
+A Flask-based REST API for WhisperX with speaker diarization support, optimized for GPU usage.
 
 ## Features
 
 - Audio transcription using WhisperX large-v2 model
 - Speaker diarization with pyannote.audio
-- GPU acceleration with CUDA support
+- GPU acceleration with CUDA 12.8 support
+- Optimized for NVIDIA GPUs with 20GB VRAM
 - Multiple audio format support
 - Production-ready with Gunicorn
 - Health monitoring endpoints
@@ -31,6 +32,8 @@ source venv/bin/activate
 ```bash
 pip install -r requirements.txt
 ```
+
+Note: The API is configured to work with PyTorch 2.7.0 and CUDA 12.8.
 
 ### 3. Set up environment variables
 
@@ -74,6 +77,8 @@ python app.py
 GET /health
 ```
 
+Returns information about the API status, including GPU device detection and memory.
+
 ### Transcribe Audio
 ```
 POST /transcribe
@@ -104,3 +109,21 @@ If you encounter errors related to loading the diarization models, verify:
 1. Your Hugging Face token is valid and has been added to the .env file
 2. You've accepted the user agreements for all required models on Hugging Face
 3. Your account has appropriate access to the pyannote models
+
+### SpeechBrain Warning Messages
+
+You may see the following warning when running the development server:
+```
+Module 'speechbrain.pretrained' was deprecated, redirecting to 'speechbrain.inference'
+```
+
+This warning is benign and is related to a SpeechBrain 1.0 change where they moved functionality from `speechbrain.pretrained` to `speechbrain.inference`. The warning has been suppressed in the production server configuration, but may still appear in development mode. It does not affect the functionality of the API.
+
+### GPU Memory Issues
+
+The API is configured to run efficiently on an NVIDIA GPU with 20GB VRAM. If you're running on a different GPU configuration:
+
+1. For GPUs with less memory: Reduce the `batch_size` parameter in the transcription function (currently set to 16)
+2. For better performance on high-memory GPUs: Increase the `batch_size` parameter for faster processing
+
+You can monitor GPU memory usage by checking the `/health` endpoint.
