@@ -3,7 +3,7 @@
 A Flask-based REST API for WhisperX with speaker diarization support.
 
 ## Features
- 
+
 - Audio transcription using WhisperX large-v2 model
 - Speaker diarization with pyannote.audio
 - GPU acceleration with CUDA support
@@ -13,18 +13,30 @@ A Flask-based REST API for WhisperX with speaker diarization support.
 
 ## Setup
 
-1. Install dependencies:
+1. Create and activate a Python virtual environment:
+```bash
+# Create a virtual environment
+python -m venv venv
+
+# Activate the virtual environment
+# On Linux/Mac:
+source venv/bin/activate
+# On Windows:
+# venv\Scripts\activate
+```
+
+2. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-2. Set up environment variables:
+3. Set up environment variables:
 ```bash
 cp .env.example .env
 # Edit .env with your Hugging Face token
 ```
 
-3. Make start script executable:
+4. Make start script executable:
 ```bash
 chmod +x start.sh
 ```
