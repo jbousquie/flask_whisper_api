@@ -45,7 +45,7 @@ def load_models():
     
     try:
         # Load WhisperX model
-        whisperx_model = whisperx.load_model("large-v2", device, compute_type=compute_type)
+        whisperx_model = whisperx.load_model("large-v3", device, compute_type=compute_type)
         logger.info("WhisperX model loaded successfully")
         
         # Load alignment model
@@ -151,7 +151,7 @@ def transcribe_audio():
 def models_info():
     """Get information about loaded models"""
     return jsonify({
-        'whisperx_model': 'large-v2' if whisperx_model else None,
+        'whisperx_model': 'large-v3' if whisperx_model else None,
         'align_model_loaded': align_model is not None,
         'diarization_available': diarize_pipeline is not None,
         'supported_formats': list(ALLOWED_EXTENSIONS),
