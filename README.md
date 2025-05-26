@@ -3,7 +3,7 @@
 A Flask-based REST API for WhisperX with speaker diarization support.
 
 ## Features
-
+ 
 - Audio transcription using WhisperX large-v2 model
 - Speaker diarization with pyannote.audio
 - GPU acceleration with CUDA support
