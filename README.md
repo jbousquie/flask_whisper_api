@@ -13,7 +13,8 @@ A Flask-based REST API for WhisperX with speaker diarization support.
 
 ## Setup
 
-1. Create and activate a Python virtual environment:
+### 1. Create and activate a Python virtual environment
+
 ```bash
 # Create a virtual environment
 python -m venv venv
@@ -25,18 +26,31 @@ source venv/bin/activate
 # venv\Scripts\activate
 ```
 
-2. Install dependencies:
+### 2. Install dependencies
+
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Set up environment variables:
+### 3. Set up environment variables
+
 ```bash
 cp .env.example .env
 # Edit .env with your Hugging Face token
 ```
 
-4. Make start script executable:
+### 4. Accept the Hugging Face model terms
+
+**Important**: Before running the application, you need to accept the user agreements for the pyannote models on Hugging Face:
+
+1. Make sure you're logged into Hugging Face with the account associated with your token
+2. Visit and accept the terms for the following models:
+   - https://huggingface.co/pyannote/segmentation
+   - https://huggingface.co/pyannote/speaker-diarization
+   - https://huggingface.co/pyannote/speaker-diarization-3.1
+
+### 5. Make start script executable
+
 ```bash
 chmod +x start.sh
 ```
@@ -81,9 +95,12 @@ GET /models/info
 
 - WAV, MP3, MP4, AVI, MOV, MKV, FLAC, M4A, OGG
 
-## Configuration
+## Troubleshooting
 
-- Maximum file size: 500MB
-- GPU memory optimization included
-- Automatic cleanup of temporary files
-- Single worker process to avoid GPU conflicts
+### Diarization Model Issues
+
+If you encounter errors related to loading the diarization models, verify:
+
+1. Your Hugging Face token is valid and has been added to the .env file
+2. You've accepted the user agreements for all required models on Hugging Face
+3. Your account has appropriate access to the pyannote models

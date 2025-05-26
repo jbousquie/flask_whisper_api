@@ -11,18 +11,18 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-app = Flask(__name__)
-app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max file size
-
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024  # 500MB max file size
 
 # Global variables for models
 whisperx_model = None
 align_model = None
 align_metadata = None
-diarize_model = None
+diarize_pipeline = None
 
 # Supported audio formats
 ALLOWED_EXTENSIONS = {'wav', 'mp3', 'mp4', 'avi', 'mov', 'mkv', 'flac', 'm4a', 'ogg'}
@@ -32,7 +32,7 @@ def allowed_file(filename):
 
 def load_models():
     """Load WhisperX models on startup"""
-    global whisperx_model, align_model, align_metadata, diarize_model
+    global whisperx_model, align_model, align_metadata, diarize_pipeline
     
     device = "cuda" if torch.cuda.is_available() else "cpu"
     compute_type = "float16" if device == "cuda" else "int8"
@@ -49,12 +49,18 @@ def load_models():
         logger.info("Alignment model loaded successfully")
         
         # Load diarization model
-        hf_token = os.getenv('HUGGINGFACE_TOKEN')
+        # Check for both HUGGINGFACE_TOKEN and HF_TOKEN
+        hf_token = os.getenv('HF_TOKEN') or os.getenv('HUGGINGFACE_TOKEN')
         if hf_token:
-            diarize_model = whisperx.DiarizationPipeline(use_auth_token=hf_token, device=device)
+            # Correct way to initialize the diarization model in WhisperX
+            from pyannote.audio import Pipeline
+            diarize_pipeline = Pipeline.from_pretrained("pyannote/speaker-diarization@2.1",
+                                                       use_auth_token=hf_token)
+            if torch.cuda.is_available():
+                diarize_pipeline = diarize_pipeline.to(torch.device(device))
             logger.info("Diarization model loaded successfully")
         else:
-            logger.warning("HUGGINGFACE_TOKEN not found, diarization will be disabled")
+            logger.warning("HF_TOKEN not found, diarization will be disabled")
             
     except Exception as e:
         logger.error(f"Error loading models: {str(e)}")
@@ -67,7 +73,7 @@ def health_check():
         'status': 'healthy',
         'whisperx_loaded': whisperx_model is not None,
         'align_loaded': align_model is not None,
-        'diarize_loaded': diarize_model is not None,
+        'diarize_loaded': diarize_pipeline is not None,
         'device': 'cuda' if torch.cuda.is_available() else 'cpu',
         'gpu_memory': torch.cuda.get_device_properties(0).total_memory / 1e9 if torch.cuda.is_available() else None
     })
@@ -105,15 +111,16 @@ def transcribe_audio():
             logger.info(f"Processing audio file: {filename}")
             
             # Transcribe
-            result = whisperx_model.transcribe(audio, batch_size=16)
+            result = whisperx_model.transcribe(audio, batch_size=16, language=language)
             
             # Align
             if align_model:
                 result = whisperx.align(result["segments"], align_model, align_metadata, audio, device="cuda" if torch.cuda.is_available() else "cpu", return_char_alignments=False)
             
             # Diarize if requested and model is available
-            if enable_diarization and diarize_model:
-                diarize_segments = diarize_model(audio, min_speakers=min_speakers, max_speakers=max_speakers)
+            if enable_diarization and diarize_pipeline:
+                # Correct way to use the diarization model with WhisperX
+                diarize_segments = whisperx.diarize(audio, diarize_pipeline, min_speakers=min_speakers, max_speakers=max_speakers)
                 result = whisperx.assign_word_speakers(diarize_segments, result)
             
             # Clean up GPU memory
@@ -124,7 +131,7 @@ def transcribe_audio():
                 'success': True,
                 'transcription': result,
                 'filename': filename,
-                'diarization_enabled': enable_diarization and diarize_model is not None
+                'diarization_enabled': enable_diarization and diarize_pipeline is not None
             })
             
         finally:
@@ -142,7 +149,7 @@ def models_info():
     return jsonify({
         'whisperx_model': 'large-v2' if whisperx_model else None,
         'align_model_loaded': align_model is not None,
-        'diarization_available': diarize_model is not None,
+        'diarization_available': diarize_pipeline is not None,
         'supported_formats': list(ALLOWED_EXTENSIONS),
         'max_file_size_mb': app.config['MAX_CONTENT_LENGTH'] / (1024 * 1024)
     })
